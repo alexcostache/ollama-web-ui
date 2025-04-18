@@ -1,0 +1,52 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          cd client
+          npm ci
+      
+      - name: Build client for GitHub Pages
+        run: |
+          cd client
+          # Create dummy data for demo
+          echo "window.DEMO_MODE = true;" > public/demo-config.js
+          npm run build
+      
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./client/build
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1 
